@@ -19,8 +19,8 @@ public class MyConsumer {
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final Map<String, Integer> idHistoryMap = new ConcurrentHashMap<>();
 
-    @KafkaListener(topics = MY_JSON_TOPIC, groupId = "test-consumer-group")
-    public void accept(ConsumerRecord<String, String> message, Acknowledgment acknowledgment) throws JsonProcessingException {
+    @KafkaListener(topics = MY_JSON_TOPIC, groupId = "test-consumer-group", concurrency = "1")
+    public void listen(ConsumerRecord<String, String> message, Acknowledgment acknowledgment) throws JsonProcessingException {
         MyMessage myMessage = objectMapper.readValue(message.value(), MyMessage.class);
         this.printPayloadIfFirstMessage(myMessage);
         acknowledgment.acknowledge(); // 수동커밋
