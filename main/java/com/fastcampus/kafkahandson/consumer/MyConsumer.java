@@ -3,6 +3,7 @@ package com.fastcampus.kafkahandson.consumer;
 import com.fastcampus.kafkahandson.model.MyMessage;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 import static com.fastcampus.kafkahandson.model.Topic.MY_JSON_TOPIC;
@@ -11,7 +12,8 @@ import static com.fastcampus.kafkahandson.model.Topic.MY_JSON_TOPIC;
 public class MyConsumer {
 
     @KafkaListener(topics = MY_JSON_TOPIC, groupId = "test-consumer-group")
-    public void accept(ConsumerRecord<String, MyMessage> message) {
+    public void accept(ConsumerRecord<String, MyMessage> message, Acknowledgment acknowledgment) {
         System.out.println("MyConsumer accept: " + message.value());
+        acknowledgment.acknowledge(); // 수동커밋
     }
 }
