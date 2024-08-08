@@ -19,7 +19,7 @@ public class MyCdConsumer {
 
     private final CustomObjectMapper objectMapper = new CustomObjectMapper();
 
-    @KafkaListener(topics = MY_CDC_TOPIC, groupId = "cdc-consumer-group", concurrency = "1")
+    @KafkaListener(topics = MY_CDC_TOPIC, groupId = "cdc-consumer-group", concurrency = "3")
     public void listen(ConsumerRecord<String, String> message, Acknowledgment acknowledgment) throws JsonProcessingException {
         MyCdcMessage myCdcMessage = objectMapper.readValue(message.value(), MyCdcMessage.class);
         System.out.println( "[Cdc Consumer] Message arrived!" + myCdcMessage.getPayload());
