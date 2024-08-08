@@ -2,14 +2,11 @@ package com.fastcampus.kafkahandson.service;
 
 import com.fastcampus.kafkahandson.data.MyEntity;
 import com.fastcampus.kafkahandson.data.MyJpaRepository;
-import com.fastcampus.kafkahandson.event.MyCdcApplicationEvent;
 import com.fastcampus.kafkahandson.model.MyModel;
 import com.fastcampus.kafkahandson.model.MyModelConverter;
 import com.fastcampus.kafkahandson.model.OperationType;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +16,6 @@ import java.util.Optional;
 public class MyServiceImpl implements MyService {
 
     private final MyJpaRepository myJpaRepository;
-    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public List<MyModel> findAll() {
@@ -34,22 +30,18 @@ public class MyServiceImpl implements MyService {
     }
 
     @Override
-    @Transactional
     public MyModel save(MyModel myModel) {
         OperationType operationType = myModel.getId() == null ? OperationType.CREATE : OperationType.UPDATE;
         MyEntity entity = myJpaRepository.save(MyModelConverter.toEntity(myModel));
         MyModel resultModel = MyModelConverter.toModel(entity);
 
-        applicationEventPublisher.publishEvent(new MyCdcApplicationEvent(this, resultModel.getId(), resultModel, operationType));
 
         return resultModel;
     }
 
     @Override
-    @Transactional
     public void delete(Integer id) {
         myJpaRepository.deleteById(id);
 
-        applicationEventPublisher.publishEvent(new MyCdcApplicationEvent(this, id, null, OperationType.DELETE));
     }
 }
