@@ -1,6 +1,8 @@
 package com.fastcampus.kafkahandson.config;
 
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
@@ -10,15 +12,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
-import org.springframework.kafka.listener.ContainerProperties;
-import org.springframework.kafka.listener.DefaultErrorHandler;
+import org.springframework.kafka.listener.*;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.util.backoff.BackOff;
 import org.springframework.util.backoff.ExponentialBackOff;
 import org.springframework.util.backoff.FixedBackOff;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Configuration
 public class KafkaConfig {
@@ -46,12 +50,32 @@ public class KafkaConfig {
 
     @Bean
     @Primary
-    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory) {
+    CommonErrorHandler errorHandler() {
+        CommonContainerStoppingErrorHandler containerStoppingErrorHandler = new CommonContainerStoppingErrorHandler();
+        AtomicReference<Consumer<?, ?>> consumer2 = new AtomicReference<>();
+        AtomicReference<MessageListenerContainer> container2 = new AtomicReference<>();
+        return new DefaultErrorHandler((rec, ex) -> {
+            // container stopping error handler를 통해서 해당 컨테이너(컨슈머)를 중지 시킴
+            containerStoppingErrorHandler.handleRemaining(ex, Collections.singletonList(rec), consumer2.get(), container2.get());
+        },generateBackOff()) {
+            @Override
+            public void handleRemaining(Exception e, List<ConsumerRecord<?, ?>> records, Consumer<?, ?> consumer, MessageListenerContainer container) {
+                consumer2.set(consumer);
+                container2.set(container);
+                super.handleRemaining(e, records, consumer, container);
+            }
+        };
+    }
+
+    @Bean
+    @Primary
+    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory, CommonErrorHandler errorHandler) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
-        //DefaultErrorHandler errorHandler = new DefaultErrorHandler(new FixedBackOff(1000L,2L)); //default9번 retry
-        DefaultErrorHandler errorHandler = new DefaultErrorHandler(generateBackOff()); //default9번 retry
-        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
+//        DefaultErrorHandler errorHandler = new DefaultErrorHandler(generateBackOff()); //default9번 retry
+//        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
+//        factory.setCommonErrorHandler(errorHandler);
+//        factory.setCommonErrorHandler(new CommonContainerStoppingErrorHandler()); // container 멈춤 : consumer 상태가 EMPTY로 바뀌고 LAG 쌓임
         factory.setCommonErrorHandler(errorHandler);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL); // 수동커밋
         return factory;
