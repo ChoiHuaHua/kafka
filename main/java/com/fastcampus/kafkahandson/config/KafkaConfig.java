@@ -11,7 +11,11 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.*;
 import org.springframework.kafka.listener.ContainerProperties;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
+import org.springframework.util.backoff.BackOff;
+import org.springframework.util.backoff.ExponentialBackOff;
+import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -45,7 +49,10 @@ public class KafkaConfig {
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
-        factory.setConcurrency(1);
+        //DefaultErrorHandler errorHandler = new DefaultErrorHandler(new FixedBackOff(1000L,2L)); //default9번 retry
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler(generateBackOff()); //default9번 retry
+        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
+        factory.setCommonErrorHandler(errorHandler);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL); // 수동커밋
         return factory;
     }
@@ -90,5 +97,12 @@ public class KafkaConfig {
     @Primary
     public KafkaTemplate<String, ?> kafkaTemplate(KafkaProperties kafkaProperties) {
         return new KafkaTemplate<>(producerFactory(kafkaProperties));
+    }
+
+    private BackOff generateBackOff() {
+        ExponentialBackOff backOff= new ExponentialBackOff(1000L, 2L);// 1000ms 간격으로 시작해서 2배씩 증가
+        // backOff.setMaxElapsedTime(10000L); // 최대 10000ms까지만 증가
+        backOff.setMaxAttempts(1); // 재실행 횟수
+        return backOff;
     }
 }
