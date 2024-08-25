@@ -30,7 +30,7 @@ public class KafkaConfig {
     @Bean
     @Primary
     @ConfigurationProperties(prefix = "spring.kafka")
-    public KafkaProperties kafkaProperties(){
+    public KafkaProperties kafkaProperties() {
         return new KafkaProperties();
     }
 
@@ -54,10 +54,10 @@ public class KafkaConfig {
         CommonContainerStoppingErrorHandler containerStoppingErrorHandler = new CommonContainerStoppingErrorHandler();
         AtomicReference<Consumer<?, ?>> consumer2 = new AtomicReference<>();
         AtomicReference<MessageListenerContainer> container2 = new AtomicReference<>();
-        return new DefaultErrorHandler((rec, ex) -> {
+        DefaultErrorHandler errorHandler = new DefaultErrorHandler((rec, ex) -> {
             // container stopping error handler를 통해서 해당 컨테이너(컨슈머)를 중지 시킴
             containerStoppingErrorHandler.handleRemaining(ex, Collections.singletonList(rec), consumer2.get(), container2.get());
-        },generateBackOff()) {
+        }, generateBackOff()) {
             @Override
             public void handleRemaining(Exception e, List<ConsumerRecord<?, ?>> records, Consumer<?, ?> consumer, MessageListenerContainer container) {
                 consumer2.set(consumer);
@@ -65,6 +65,8 @@ public class KafkaConfig {
                 super.handleRemaining(e, records, consumer, container);
             }
         };
+        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
+        return errorHandler;
     }
 
     @Bean
@@ -83,7 +85,7 @@ public class KafkaConfig {
 
     @Bean
     @Qualifier("batchConsumerFactory")
-    public ConsumerFactory<String, Object> batchConsumerFactory (KafkaProperties kafkaProperties) {
+    public ConsumerFactory<String, Object> batchConsumerFactory(KafkaProperties kafkaProperties) {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaProperties.getBootstrapServers());
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, kafkaProperties.getConsumer().getKeyDeserializer());
@@ -124,7 +126,7 @@ public class KafkaConfig {
     }
 
     private BackOff generateBackOff() {
-        ExponentialBackOff backOff= new ExponentialBackOff(1000L, 2L);// 1000ms 간격으로 시작해서 2배씩 증가
+        ExponentialBackOff backOff = new ExponentialBackOff(1000L, 2L);// 1000ms 간격으로 시작해서 2배씩 증가
         // backOff.setMaxElapsedTime(10000L); // 최대 10000ms까지만 증가
         backOff.setMaxAttempts(1); // 재실행 횟수
         return backOff;

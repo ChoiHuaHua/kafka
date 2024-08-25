@@ -30,7 +30,7 @@ public class MyCdConsumer {
         System.out.println( "[Cdc Consumer] Message arrived!" + myCdcMessage.getPayload() + " " + retryPrint+ " " + LocalDateTime.now());
         retryCount++;
 
-        throw new RuntimeException("Test Exception");
+        throw new IllegalArgumentException("Test Exception");
         //acknowledgment.acknowledge(); // 수동커밋
     }
 }
