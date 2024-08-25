@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.fastcampus.kafkahandson.model.Topic.MY_CUSTOM_CDC_TOPIC_DLT;
+
 @Configuration
 public class KafkaConfig {
 
@@ -48,37 +50,41 @@ public class KafkaConfig {
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
-    @Bean
-    @Primary
-    CommonErrorHandler errorHandler() {
-        CommonContainerStoppingErrorHandler containerStoppingErrorHandler = new CommonContainerStoppingErrorHandler();
-        AtomicReference<Consumer<?, ?>> consumer2 = new AtomicReference<>();
-        AtomicReference<MessageListenerContainer> container2 = new AtomicReference<>();
-        DefaultErrorHandler errorHandler = new DefaultErrorHandler((rec, ex) -> {
-            // container stopping error handler를 통해서 해당 컨테이너(컨슈머)를 중지 시킴
-            containerStoppingErrorHandler.handleRemaining(ex, Collections.singletonList(rec), consumer2.get(), container2.get());
-        }, generateBackOff()) {
-            @Override
-            public void handleRemaining(Exception e, List<ConsumerRecord<?, ?>> records, Consumer<?, ?> consumer, MessageListenerContainer container) {
-                consumer2.set(consumer);
-                container2.set(container);
-                super.handleRemaining(e, records, consumer, container);
-            }
-        };
-        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
-        return errorHandler;
-    }
+//    @Bean
+//    @Primary
+//    CommonErrorHandler errorHandler() {
+//        CommonContainerStoppingErrorHandler containerStoppingErrorHandler = new CommonContainerStoppingErrorHandler();
+//        AtomicReference<Consumer<?, ?>> consumer2 = new AtomicReference<>();
+//        AtomicReference<MessageListenerContainer> container2 = new AtomicReference<>();
+//        DefaultErrorHandler errorHandler = new DefaultErrorHandler((rec, ex) -> {
+//            // container stopping error handler를 통해서 해당 컨테이너(컨슈머)를 중지 시킴
+//            containerStoppingErrorHandler.handleRemaining(ex, Collections.singletonList(rec), consumer2.get(), container2.get());
+//        }, generateBackOff()) {
+//            @Override
+//            public void handleRemaining(Exception e, List<ConsumerRecord<?, ?>> records, Consumer<?, ?> consumer, MessageListenerContainer container) {
+//                consumer2.set(consumer);
+//                container2.set(container);
+//                super.handleRemaining(e, records, consumer, container);
+//            }
+//        };
+//        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
+//        return errorHandler;
+//    }
 
     @Bean
     @Primary
-    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory, CommonErrorHandler errorHandler) {
+    public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory(ConsumerFactory<String, Object> consumerFactory, KafkaTemplate<String, Object> kafkaTemplate) {
         ConcurrentKafkaListenerContainerFactory<String, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory);
 //        DefaultErrorHandler errorHandler = new DefaultErrorHandler(generateBackOff()); //default9번 retry
 //        errorHandler.addNotRetryableExceptions(IllegalArgumentException.class);
 //        factory.setCommonErrorHandler(errorHandler);
 //        factory.setCommonErrorHandler(new CommonContainerStoppingErrorHandler()); // container 멈춤 : consumer 상태가 EMPTY로 바뀌고 LAG 쌓임
-        factory.setCommonErrorHandler(errorHandler);
+
+//        factory.setCommonErrorHandler(new DefaultErrorHandler(new DeadLetterPublishingRecoverer(kafkaTemplate), generateBackOff()));
+        factory.setCommonErrorHandler(new DefaultErrorHandler((recode, excution) -> {
+            kafkaTemplate.send(MY_CUSTOM_CDC_TOPIC_DLT,(String) recode.key(), recode.value());
+        }, generateBackOff()));
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL); // 수동커밋
         return factory;
     }
