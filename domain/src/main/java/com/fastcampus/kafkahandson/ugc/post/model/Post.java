@@ -9,7 +9,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class Post { //원천 관리용 (포스트가 발행이 되면 저장하는 모델)
+public class Post { // 원천 관리용
+
     private Long id;
     private String title;
     private String content;
@@ -29,19 +30,23 @@ public class Post { //원천 관리용 (포스트가 발행이 되면 저장하�
 
     public Post delete() {
         LocalDateTime now = LocalDateTime.now();
-        this.deletedAt = now;
         this.updatedAt = now;
+        this.deletedAt = now;
         return this;
     }
 
-    public Post Undelete() {
+    public Post undelete() {
         this.deletedAt = null;
-        this.updatedAt = LocalDateTime.now();
         return this;
     }
 
-    public static Post generate(Long id, String title, String content, Long userId, Long categoryId) {
+    public static Post generate(
+            Long userId,
+            String title,
+            String content,
+            Long categoryId
+    ) {
         LocalDateTime now = LocalDateTime.now();
-        return new Post(id, title, content, userId, categoryId, now, now, null);
+        return new Post(null, title, content, userId, categoryId, now, now, null);
     }
 }
