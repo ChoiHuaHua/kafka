@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.Getter;
 
+import java.util.List;
+
 @Data
 public class ChatCompletionResponse {
     private String id;
@@ -38,7 +40,15 @@ public class ChatCompletionResponse {
         private int promptTokens;
         @JsonProperty("completion_tokens")
         private int completionTokens;
+        @JsonProperty("completion_tokens_details")
+        private CompletionTokensDetails completionTokensDetails;  // 객체로 정의
         @JsonProperty("total_tokens")
-        private int totalTokens;
+        private int total_tokens;
+    }
+
+    @Data
+    public static class CompletionTokensDetails {
+        @JsonProperty("reasoning_tokens")
+        private int reasoningTokens;
     }
 }
