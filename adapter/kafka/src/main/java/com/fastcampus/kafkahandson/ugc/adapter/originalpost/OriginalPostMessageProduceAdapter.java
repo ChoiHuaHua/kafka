@@ -1,4 +1,4 @@
-package com.fastcampus.kafkahandson.ugc.adapter.originpost;
+package com.fastcampus.kafkahandson.ugc.adapter.originalpost;
 
 import com.fastcampus.kafkahandson.ugc.CustomObjectMapper;
 import com.fastcampus.kafkahandson.ugc.adapter.common.OperationType;
