@@ -1,3 +1,4 @@
+
 package com.fastcampus.kafkahandson.ugc.model;
 
 import lombok.Data;

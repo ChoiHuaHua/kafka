@@ -1,4 +1,4 @@
-package com.fastcampus.kafkahandson.ugc.adapter.inspectedPort;
+package com.fastcampus.kafkahandson.ugc.adapter.inspectedpost;
 
 import com.fastcampus.kafkahandson.ugc.CustomObjectMapper;
 import com.fastcampus.kafkahandson.ugc.adapter.common.OperationType;
