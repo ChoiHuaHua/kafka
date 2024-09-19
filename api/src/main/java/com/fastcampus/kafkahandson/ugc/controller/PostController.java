@@ -28,29 +28,19 @@ public class PostController {
 
     @PostMapping
     ResponseEntity<PostDto> createPost(@RequestBody PostCreateRequest request) {
-        Post post = postCreateUsecase.create(
-                new PostCreateUsecase.Request(
-                        request.getUserId(),
-                        request.getTitle(),
-                        request.getContent(),
-                        request.getCategoryId()
-                )
-        );
+        Post post = postCreateUsecase.create(new PostCreateUsecase.Request(request.getUserId(), request.getTitle(), request.getContent(), request.getCategoryId()));
         return ResponseEntity.ok().body(toDto(post));
     }
 
     @PutMapping("/{postId}")
-    ResponseEntity<PostDto> updatePost(@PathVariable Long id, @RequestBody PostUpdateRequest request) {
-        Post post = postUpdateUsecase.update(
-                new PostUpdateUsecase.Request(
-                        id,
-                        request.getTitle(),
-                        request.getContent(),
-                        request.getCategoryId()
-                )
-        );
+    ResponseEntity<PostDto> updatePost(@PathVariable("postId") Long id, @RequestBody PostUpdateRequest request) {
+        Post post = postUpdateUsecase.update(new PostUpdateUsecase.Request(id, request.getTitle(), request.getContent(), request.getCategoryId()));
+        if (post == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok().body(toDto(post));
     }
+
 
     @GetMapping("/{postId}/detail")
     ResponseEntity<PostDetailDto> readPostDetail(@PathVariable("postId") Long id) {
@@ -64,37 +54,16 @@ public class PostController {
 
     @DeleteMapping("/{postId}")
     ResponseEntity<PostDto> deletePost(@PathVariable("postId") Long id) {
-        Post post = postDeleteUsecase.delete(
-                new PostDeleteUsecase.Request(
-                        id
-                )
-        );
+        Post post = postDeleteUsecase.delete(new PostDeleteUsecase.Request(id));
 
         return ResponseEntity.ok().body(toDto(post));
     }
 
     private PostDto toDto(Post post) {
-        return new PostDto(
-                post.getId(),
-                post.getTitle(),
-                post.getContent(),
-                post.getUserId(),
-                post.getCategoryId(),
-                post.getCreatedAt(),
-                post.getUpdatedAt(),
-                post.getDeletedAt()
-        );
+        return new PostDto(post.getId(), post.getTitle(), post.getContent(), post.getUserId(), post.getCategoryId(), post.getCreatedAt(), post.getUpdatedAt(), post.getDeletedAt());
     }
 
     private PostDetailDto toDto(ResolvedPost resolvedPost) {
-        return new PostDetailDto(
-                resolvedPost.getId(),
-                resolvedPost.getTitle(),
-                resolvedPost.getContent(),
-                resolvedPost.getUserName(),
-                resolvedPost.getCategoryName(),
-                resolvedPost.getCreatedAt(),
-                resolvedPost.isUpdated()
-        );
+        return new PostDetailDto(resolvedPost.getId(), resolvedPost.getTitle(), resolvedPost.getContent(), resolvedPost.getUserName(), resolvedPost.getCategoryName(), resolvedPost.getCreatedAt(), resolvedPost.isUpdated());
     }
 }
