@@ -1,6 +1,7 @@
 package com.fastcampus.kafkahandson.ugc.controller;
 
 
+import com.fastcampus.kafkahandson.ugc.PostSearchUsecase;
 import com.fastcampus.kafkahandson.ugc.SubscribingPostListUsecase;
 import com.fastcampus.kafkahandson.ugc.model.PostInListDto;
 import com.fastcampus.kafkahandson.ugc.post.model.ResolvedPost;
@@ -16,6 +17,7 @@ import java.util.List;
 public class  PostListController {
 
     private final SubscribingPostListUsecase subscribingPostListUsecase;
+    private final PostSearchUsecase postSearchUsecase;
 
     @GetMapping("/inbox/{userId}")
     ResponseEntity<List<PostInListDto>> listSubscribingPosts(@PathVariable("userId") Long userId, @RequestParam(name = "page", defaultValue = "0") int page) {
@@ -25,8 +27,10 @@ public class  PostListController {
     }
 
     @GetMapping("/search")
-    ResponseEntity<List<PostInListDto>> searchPosts(@RequestParam("query") String query) {
-        return ResponseEntity.internalServerError().build();
+    ResponseEntity<List<PostInListDto>> searchPosts(@RequestParam("keyword") String keyword, @RequestParam(name = "page", defaultValue = "0") int page) {
+
+        List<ResolvedPost> resolvedPosts = postSearchUsecase.getSearchResultByKeyword(keyword, page);
+        return ResponseEntity.ok().body(resolvedPosts.stream().map(this::toDto).toList());
     }
 
     private PostInListDto toDto(ResolvedPost resolvedPost) {

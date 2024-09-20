@@ -39,7 +39,7 @@ public class OriginalPostMessageProduceAdapter implements OriginalPostMessagePro
     private OriginalPostMessage convertToMessage(Long id, Post post, OperationType operationType) {
         return new OriginalPostMessage(
                 id,
-                new OriginalPostMessage.Payload(
+                post == null ? null : new OriginalPostMessage.Payload(
                         post.getId(),
                         post.getTitle(),
                         post.getContent(),
