@@ -4,6 +4,8 @@ import com.fastcampus.kafkahandson.ugc.port.CouponPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @RequiredArgsConstructor
 @Component
 public class CouponAdapter implements CouponPort {
@@ -12,27 +14,14 @@ public class CouponAdapter implements CouponPort {
 
     @Override
     public Coupon save(Coupon coupon) {
-        CouponEntity couponEntity = couponJpaRepository.save(toEntity(coupon));
-        return this.toModel(couponEntity);
+        CouponEntity couponEntity = couponJpaRepository.save(CouponEntityConverter.toCouponEntity(coupon));
+        return CouponEntityConverter.toCouponModel(couponEntity);
     }
 
-    private CouponEntity toEntity(Coupon coupon) {
-        return new CouponEntity(
-                coupon.getId(),
-                coupon.getUserId(),
-                coupon.getCouponEventId(),
-                coupon.getIssuedAt(),
-                coupon.getUsedAt()
-        );
-    }
-
-    private Coupon toModel(CouponEntity couponEntity) {
-        return new Coupon(
-                couponEntity.getId(),
-                couponEntity.getUserId(),
-                couponEntity.getCouponEventId(),
-                couponEntity.getIssuedAt(),
-                couponEntity.getUsedAt()
-        );
+    @Override
+    public List<ResolvedCoupon> listByUserId(Long userId) {
+        return couponJpaRepository.findAllByUserId(userId).stream()
+                .map(CouponEntityConverter::toResolvedCouponModel)
+                .toList();
     }
 }
